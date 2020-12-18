@@ -1,0 +1,18 @@
+/* You can add global styles to this file, and also import other style files */
+
+@import '~bootstrap/scss/bootstrap';
+
+.dataset-mapping {
+    margin: 20px 20px 0 0;
+    
+    padding-left: 10px;
+    
+    border-left: darkgrey 10px solid;
+    border-bottom: darkgray 5px solid;
+
+    border-radius: 10px 0 0 10px;
+    
+    &:first-of-type {
+        
+    }
+}
