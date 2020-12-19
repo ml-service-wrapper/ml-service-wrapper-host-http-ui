@@ -1,4 +1,4 @@
-<div>
+<div *ngIf="!outputDataTables">
     <h2 class="mb-3">Upload Files</h2>
 
     <ngx-file-drop dropZoneLabel="Drop files here" (onFileDrop)="onFilesDropped($event)">
@@ -11,14 +11,14 @@
         </ng-template>
     </ngx-file-drop>
 </div>
-<form #mappingForm="ngForm" (ngSubmit)="mappingForm.valid && performProcessing()">
+<form #mappingForm="ngForm" (ngSubmit)="mappingForm.valid && performProcessing()" *ngIf="!outputDataTables">
 
     <hr />
 
-    <h2>Map Datasets</h2>
+    <h2>Map DataTables</h2>
 
     <div class="d-flex mt-3">
-        <ul ngbNav #nav="ngbNav" class="nav-pills" orientation="vertical" [destroyOnHide]="false"
+        <ul ngbNav #inputDataTablesNav="ngbNav" class="nav-pills" orientation="vertical" [destroyOnHide]="false"
             [(activeId)]="selectedMapping">
             <li [ngbNavItem]="input.schema.name" *ngFor="let input of inputs">
                 <a ngbNavLink>{{ input.schema.name }}</a>
@@ -26,12 +26,12 @@
                     <h3>{{ input.schema.name }}</h3>
 
                     <div class="form-group">
-                        <select class="custom-select" style="width: 400px;" [(ngModel)]="input.fileDataset"
-                            [name]="input.schema.name + '_fileDataset'" #fieldDatasetSelect="ngModel"
-                            [disabled]="fileDatasets.length === 0"
-                            [ngClass]="{ 'is-invalid': fieldDatasetSelect.invalid }" [required]="input.schema.required">
+                        <select class="custom-select" style="width: 400px;" [(ngModel)]="input.fileDataTable"
+                            [name]="input.schema.name + '_fileDataTable'" #fieldDataTableSelect="ngModel"
+                            [disabled]="fileDataTables.length === 0" [ngClass]="{ 'is-invalid': fieldDataTableSelect.invalid }"
+                            [required]="input.schema.required">
                             <option [ngValue]="null" *ngIf="!input.schema.required">[Empty]</option>
-                            <option *ngFor="let inputFile of fileDatasets" [ngValue]="inputFile">{{ inputFile.name
+                            <option *ngFor="let inputFile of fileDataTables" [ngValue]="inputFile">{{ inputFile.name
                                 }}
                             </option>
                         </select>
@@ -50,14 +50,17 @@
                                     <td>{{ targetColumn.name }}</td>
                                     <td>
                                         <select class="custom-select" style="max-width: 400px;"
-                                            [disabled]="!input.fileDataset || input.fileDataset.columns.length === 0"
-                                            [name]="input.schema.name + '_fileDataset_' + targetColumn.name"
+                                            [disabled]="!input.fileDataTable || input.fileDataTable.columns.length === 0"
+                                            [name]="input.schema.name + '_fileDataTable_' + targetColumn.name"
                                             #sourceColumnSelect="ngModel"
                                             [(ngModel)]="input.mappings[targetColumn.name]"
                                             [ngClass]="{ 'is-invalid': sourceColumnSelect.invalid }"
                                             [required]="targetColumn.required">
+                                            <option [ngValue]="null" [disabled]="targetColumn.required"
+                                                *ngIf="!targetColumn.required || !input.mappings[targetColumn.name]">
+                                                [Not mapped]</option>
                                             <option
-                                                *ngFor="let sourceColumn of (input.fileDataset ? input.fileDataset.columns : [])">
+                                                *ngFor="let sourceColumn of (input.fileDataTable ? input.fileDataTable.columns : [])">
                                                 {{ sourceColumn.name }}
                                             </option>
                                         </select>
@@ -70,7 +73,7 @@
             </li>
         </ul>
 
-        <div [ngbNavOutlet]="nav" class="ml-4"></div>
+        <div [ngbNavOutlet]="inputDataTablesNav" class="ml-4"></div>
     </div>
 
     <hr />
@@ -82,3 +85,37 @@
         </div>
     </div>
 </form>
+<div *ngIf="outputDataTables">
+    <h2>Output DataTables</h2>
+
+    <div class="btn-toolbar">
+        <button class="btn btn-secondary" (click)="exportExcel()">Export to
+            Excel...</button>
+    </div>
+
+    <div class="d-flex mt-3">
+        <ul ngbNav #outputDataTablesNav="ngbNav" class="nav-pills" orientation="vertical">
+            <li [ngbNavItem]="outputDataTable.name" *ngFor="let outputDataTable of outputDataTables">
+                <a ngbNavLink>{{ outputDataTable.name }}</a>
+
+                <ng-template ngbNavContent>
+                    <h3>{{ outputDataTable.name }}</h3>
+                    <p *ngIf="outputDataTable.schema?.description"></p>
+
+                    <table class="table table-hover table-striped">
+                        <thead>
+                            <th *ngFor="let column of outputDataTable.columns">{{ column.name }}</th>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let row of outputDataTable.rows">
+                                <td *ngFor="let column of outputDataTable.columns">{{ row[column.name] | json }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </ng-template>
+            </li>
+        </ul>
+
+        <div [ngbNavOutlet]="outputDataTablesNav" class="ml-4"></div>
+    </div>
+</div>

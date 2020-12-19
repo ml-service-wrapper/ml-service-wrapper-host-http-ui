@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { read, utils, WorkBook } from "xlsx";
-import { IBatchDataset } from "./wrapper-api-client.service";
+import { IBatchDataTable } from "./wrapper-api-client.service";
 
 @Injectable({
     providedIn: 'root'
@@ -9,7 +9,7 @@ export class FileParserService {
 
     constructor() { }
 
-    async parseDatasetFile(file: File): Promise<IBatchDataset<Record<string, any>>[]> {
+    async parseDataTableFile(file: File): Promise<IBatchDataTable<Record<string, any>>[]> {
         switch (file.type) {
             case "application/json": {
                 const json = JSON.parse(await file.text());
@@ -26,7 +26,7 @@ export class FileParserService {
                 break;
             }
             case "application/vnd.ms-excel": {
-                return await this.parseExcelDataset(file);
+                return await this.parseExcelDataTable(file);
             }
             default: {
                 console.log(file.type);
@@ -37,7 +37,7 @@ export class FileParserService {
         return [];
     }
 
-    async parseExcelDataset(file: File): Promise<IBatchDataset[]> {
+    async parseExcelDataTable(file: File): Promise<IBatchDataTable[]> {
         const workbook = await this.readExcelWorkbook(file);
 
         return workbook.SheetNames.map((sheetName) => ({

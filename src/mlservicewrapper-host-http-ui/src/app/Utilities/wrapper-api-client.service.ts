@@ -4,20 +4,20 @@ import { JSONSchema4 } from "json-schema";
 import { Observable } from "rxjs";
 import { map } from "rxjs/operators";
 
-export interface IBatchDataset<T extends Record<string, any> = Record<string, any>> {
+export interface IBatchDataTable<T extends Record<string, any> = Record<string, any>> {
     name: string;
     rows: T[];
 }
 
 export interface IBatchProcessRequest {
-    datasets: IBatchDataset[];
+    tables: IBatchDataTable[];
 }
 
 export interface IBatchProcessResponse {
-    datasets: IBatchDataset[];
+    tables: IBatchDataTable[];
 }
 
-interface IApiSwaggerDatasetCollection<T extends Record<string, JSONSchema4>> {
+interface IApiSwaggerDataTableCollection<T extends Record<string, JSONSchema4>> {
     type: "object";
     properties: T;
     required: (keyof this["properties"])[];
@@ -40,7 +40,7 @@ interface IApiSwagger<TIn extends Record<string, JSONSchema4> = Record<string, J
                         "schema": {
                             "type": "object",
                             "properties": {
-                                "inputs": IApiSwaggerDatasetCollection<TIn>
+                                "inputs": IApiSwaggerDataTableCollection<TIn>
                             }
                         }
                     }
@@ -50,7 +50,7 @@ interface IApiSwagger<TIn extends Record<string, JSONSchema4> = Record<string, J
                         "schema": {
                             "type": "object",
                             "properties": {
-                                "outputs": IApiSwaggerDatasetCollection<TOut>
+                                "outputs": IApiSwaggerDataTableCollection<TOut>
                             }
                         }
                     }
@@ -60,14 +60,17 @@ interface IApiSwagger<TIn extends Record<string, JSONSchema4> = Record<string, J
     }
 };
 
-export interface IDatasetSchema {
+export interface IDataTableSchemaColumn {
     name: string;
     required: boolean;
-    columns: {
-        name: string;
-        required: boolean;
-        schema: JSONSchema4;
-    }[];
+    schema: JSONSchema4;
+}
+
+export interface IDataTableSchema {
+    name: string;
+    description?: string;
+    required: boolean;
+    columns: IDataTableSchemaColumn[];
 }
 
 export interface IApiStatus {
@@ -80,7 +83,7 @@ export interface IApiStatus {
 })
 export class WrapperApiClientService {
 
-    public baseUrl: string = "http://127.0.0.1:8000";
+    public baseUrl: string = "http://127.0.0.1:8001";
 
     constructor(
         protected readonly http: HttpClient
@@ -93,8 +96,8 @@ export class WrapperApiClientService {
     performBatchProcessing(req: IBatchProcessRequest): Observable<IBatchProcessResponse> {
         const inputs: Record<string, any[]> = {};
 
-        for (const dataset of req.datasets) {
-            inputs[dataset.name] = dataset.rows;
+        for (const dataTable of req.tables) {
+            inputs[dataTable.name] = dataTable.rows;
         }
 
         const body = {
@@ -103,36 +106,36 @@ export class WrapperApiClientService {
 
         return this.post<{ outputs: Record<string, any[]> }>("/api/process/batch", body).pipe(
             map(resp => {
-                const datasets: IBatchDataset[] = [];
+                const tables: IBatchDataTable[] = [];
 
                 for (const name in resp.outputs) {
                     if (!resp.outputs.hasOwnProperty(name)) {
                         continue;
                     }
 
-                    datasets.push({
+                    tables.push({
                         name,
                         rows: resp.outputs[name]
                     });
                 }
 
                 return {
-                    datasets
+                    tables: tables
                 }
             })
         );
     }
 
-    getSchemas(): Observable<{ inputs: IDatasetSchema[], outputs: IDatasetSchema[] }> {
+    getSchemas(): Observable<{ inputs: IDataTableSchema[], outputs: IDataTableSchema[] }> {
         return this.get<IApiSwagger>("/swagger/v1/swagger.json").pipe(
             map(resp => {
                 const requestSchema = resp.paths["/api/process/batch"].post;
 
                 const inputSchema = requestSchema.parameters.filter(c => c.in === "body")[0]?.schema.properties.inputs;
-                const inputs = Array.from(this.getDatasets(inputSchema));
+                const inputs = Array.from(this.getDataTables(inputSchema));
 
                 const outputSchema = requestSchema.responses[200].schema.properties.outputs;
-                const outputs = Array.from(this.getDatasets(outputSchema));
+                const outputs = Array.from(this.getDataTables(outputSchema));
 
                 return {
                     inputs,
@@ -162,27 +165,27 @@ export class WrapperApiClientService {
         return baseUrl + "/" + relative;
     }
 
-    private * getDatasets<T extends Record<string, JSONSchema4>>(spec: IApiSwaggerDatasetCollection<T>): Generator<IDatasetSchema, void, unknown> {
+    private * getDataTables<T extends Record<string, JSONSchema4>>(spec: IApiSwaggerDataTableCollection<T>): Generator<IDataTableSchema, void, unknown> {
 
         for (const name in spec.properties) {
             if (!spec.properties.hasOwnProperty(name)) {
                 continue;
             }
 
-            const columns: IDatasetSchema["columns"] = [];
+            const columns: IDataTableSchema["columns"] = [];
 
-            let datasetSchemaArr = spec.properties[name].items;
+            let dataTableSchemaArr = spec.properties[name].items;
 
-            const datasetSchema = Array.isArray(datasetSchemaArr) ? datasetSchemaArr[0] : datasetSchemaArr;
+            const dataTableSchema = Array.isArray(dataTableSchemaArr) ? dataTableSchemaArr[0] : dataTableSchemaArr;
 
-            if (datasetSchema) {
-                for (const columnName in datasetSchema.properties) {
-                    const required = Array.isArray(datasetSchema.required) ? datasetSchema.required.indexOf(columnName) >= 0 : false;
+            if (dataTableSchema) {
+                for (const columnName in dataTableSchema.properties) {
+                    const required = Array.isArray(dataTableSchema.required) ? dataTableSchema.required.indexOf(columnName) >= 0 : false;
 
                     columns.push({
                         name: columnName,
                         required,
-                        schema: datasetSchema.properties[columnName]
+                        schema: dataTableSchema.properties[columnName]
                     });
                 }
             }
