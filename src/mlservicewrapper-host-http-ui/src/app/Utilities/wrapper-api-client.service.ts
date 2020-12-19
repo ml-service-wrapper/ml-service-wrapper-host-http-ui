@@ -1,8 +1,9 @@
 import { HttpClient } from "@angular/common/http";
-import { Injectable } from '@angular/core';
+import { Inject, Injectable } from '@angular/core';
 import { JSONSchema4 } from "json-schema";
-import { Observable } from "rxjs";
-import { map } from "rxjs/operators";
+import { Observable, of } from "rxjs";
+import { map, switchMap } from "rxjs/operators";
+import { API_BASE_URL } from "src/main";
 
 export interface IBatchDataTable<T extends Record<string, any> = Record<string, any>> {
     name: string;
@@ -83,11 +84,14 @@ export interface IApiStatus {
 })
 export class WrapperApiClientService {
 
-    public baseUrl: string = "http://127.0.0.1:8001";
+    readonly baseUrl$: Observable<string>;
 
     constructor(
-        protected readonly http: HttpClient
-    ) { }
+        protected readonly http: HttpClient,
+        @Inject(API_BASE_URL) apiBaseUrl: string
+    ) {
+        this.baseUrl$ = of(apiBaseUrl);
+    }
 
     getStatus() {
         return this.get<IApiStatus>("/api/status");
@@ -146,23 +150,26 @@ export class WrapperApiClientService {
     }
 
     protected get<T>(url: string) {
-        return this.http.get<T>(this.getUrl(url));
+        return this.getUrl(url).pipe(
+            switchMap(u => this.http.get<T>(u))
+        );
     }
     protected post<T>(url: string, body: any) {
-        return this.http.post<T>(this.getUrl(url), body);
+        return this.getUrl(url).pipe(
+            switchMap(u => this.http.post<T>(u, body))
+        );
     }
 
     private getUrl(relative: string) {
-        let baseUrl = this.baseUrl;
-        if (baseUrl.endsWith("/")) {
-            baseUrl = baseUrl.slice(0, -1);
-        }
 
         if (relative.startsWith("/")) {
             relative = relative.substr(1);
         }
 
-        return baseUrl + "/" + relative;
+        return this.baseUrl$.pipe(
+            map(c => c.endsWith("/") ? c.slice(0, -1) : c),
+            map(c => c + "/" + relative)
+        );
     }
 
     private * getDataTables<T extends Record<string, JSONSchema4>>(spec: IApiSwaggerDataTableCollection<T>): Generator<IDataTableSchema, void, unknown> {
