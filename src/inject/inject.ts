@@ -21,7 +21,7 @@ const currentScript = document.currentScript;
 
             console.log(currentScript);
             // iframe.src = "http://localhost:4200/?api_base_url=" + encodeURIComponent(this.baseUrl);
-            iframe.src = "https://ml-service-wrapper.github.io/ml-service-wrapper-host-http-ui/process?api_base_url=" + encodeURIComponent(this.baseUrl);
+            iframe.src = "https://ml-service-wrapper.github.io/ml-service-wrapper-host-http-ui/index.html?api_base_url=" + encodeURIComponent(this.baseUrl);
             iframe.style.position = "fixed";
             iframe.style.left = "0";
             iframe.style.right = "0";
