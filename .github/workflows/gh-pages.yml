@@ -25,12 +25,32 @@ jobs:
       - uses: actions/checkout@v2
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
 
-      - name: Angular Deploy gh-pages Actions
-        uses: AhsanAyaz/angular-deploy-gh-pages-actions@v1.3.1
+      - name: Install and Build Angular
+        working-directory: src/mlservicewrapper-host-http-ui/
+        run: |
+          npm install
+          npm run build -- --prod --out-dir ../dist/ --base-href /ml-service-wrapper-host-http-ui/
+
+      - name: Install and Build Inject
+        working-directory: src/inject/
+        run: |
+          npm install
+          npm run build -- --out-dir ../dist/inject
+
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@3.7.1
         with:
-          angular_project_dir: src/mlservicewrapper-host-http-ui/
-          github_access_token: ${{ secrets.ACCESS_TOKEN }} # see the Configuration section for how you can create secrets
-          build_configuration: production # The build environment for the app. please look configurations in your angular.json
-          base_href: /ml-service-wrapper-host-http-ui/   # make sure this corresponds to https://<your_username>.github.io/<base_href>/
-          deploy_branch: gh-pages # The branch the action should deploy to.
-          angular_dist_build_folder: src/mlservicewrapper-host-http-ui/dist/mlservicewrapper-host-http-ui
+          GITHUB_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          BRANCH: gh-pages # The branch the action should deploy to.
+          FOLDER: src/dist # The folder the action should deploy.
+          CLEAN: true # Automatically remove deleted files from the deploy branch
+
+ #     - name: Angular Deploy gh-pages Actions
+ #       uses: AhsanAyaz/angular-deploy-gh-pages-actions@v1.3.1
+ #       with:
+ #         angular_project_dir: src/mlservicewrapper-host-http-ui/
+ #         github_access_token: ${{ secrets.ACCESS_TOKEN }} # see the Configuration section for how you can create secrets
+ #         build_configuration: production # The build environment for the app. please look configurations in your angular.json
+ #         base_href: /ml-service-wrapper-host-http-ui/   # make sure this corresponds to https://<your_username>.github.io/<base_href>/
+ #         deploy_branch: gh-pages # The branch the action should deploy to.
+ #         angular_dist_build_folder: src/mlservicewrapper-host-http-ui/dist/mlservicewrapper-host-http-ui
