@@ -29,13 +29,13 @@ jobs:
         working-directory: src/mlservicewrapper-host-http-ui/
         run: |
           npm install
-          npm run build -- --prod --out-dir ../dist/ --base-href /ml-service-wrapper-host-http-ui/
+          npm run build -- --prod --output-path ../dist/ --base-href /ml-service-wrapper-host-http-ui/
 
       - name: Install and Build Inject
         working-directory: src/inject/
         run: |
           npm install
-          npm run build -- --out-dir ../dist/inject
+          npm run build -- --outDir ../dist/inject
 
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@3.7.1
