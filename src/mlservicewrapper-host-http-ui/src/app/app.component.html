@@ -18,6 +18,127 @@
 
 <div class="container-fluid">
     <div class="mt-5">
-        <router-outlet></router-outlet>
+        <div *ngIf="!outputDataTables">
+            <h2 class="mb-3">Upload Files</h2>
+        
+            <ngx-file-drop dropZoneLabel="Drop files here" (onFileDrop)="onFilesDropped($event)">
+                <ng-template ngx-file-drop-content-tmp let-openFileSelector="openFileSelector">
+                    <div class="w-100 h-100 text-center" style="position: relative; padding-top: 40px">
+                        <a role="button" class="stretched-link" (click)="openFileSelector()">
+                            Drop Excel, CSV, or JSON files, or click to open one!
+                        </a>
+                    </div>
+                </ng-template>
+            </ngx-file-drop>
+        </div>
+        <form #mappingForm="ngForm" (ngSubmit)="mappingForm.valid && performProcessing()" *ngIf="!outputDataTables">
+        
+            <hr />
+        
+            <h2>Map DataTables</h2>
+        
+            <div class="d-flex mt-3">
+                <ul ngbNav #inputDataTablesNav="ngbNav" class="nav-pills" orientation="vertical" [destroyOnHide]="false"
+                    [(activeId)]="selectedMapping">
+                    <li [ngbNavItem]="input.schema.name" *ngFor="let input of inputs">
+                        <a ngbNavLink>{{ input.schema.name }}</a>
+                        <ng-template ngbNavContent>
+                            <h3>{{ input.schema.name }}</h3>
+        
+                            <div class="form-group">
+                                <select class="custom-select" style="width: 400px;" [(ngModel)]="input.fileDataTable"
+                                    [name]="input.schema.name + '_fileDataTable'" #fieldDataTableSelect="ngModel"
+                                    [disabled]="fileDataTables.length === 0"
+                                    [ngClass]="{ 'is-invalid': fieldDataTableSelect.invalid }"
+                                    [required]="input.schema.required">
+                                    <option [ngValue]="null" *ngIf="!input.schema.required">[Empty]</option>
+                                    <option *ngFor="let inputFile of fileDataTables" [ngValue]="inputFile">{{ inputFile.name
+                                        }}
+                                    </option>
+                                </select>
+                            </div>
+        
+                            <div>
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Target Column</th>
+                                            <th>Source Column</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="upload-name-style">
+                                        <tr *ngFor="let targetColumn of input.schema.columns">
+                                            <td>{{ targetColumn.name }}</td>
+                                            <td>
+                                                <select class="custom-select" style="max-width: 400px;"
+                                                    [disabled]="!input.fileDataTable || input.fileDataTable.columns.length === 0"
+                                                    [name]="input.schema.name + '_fileDataTable_' + targetColumn.name"
+                                                    #sourceColumnSelect="ngModel"
+                                                    [(ngModel)]="input.mappings[targetColumn.name]"
+                                                    [ngClass]="{ 'is-invalid': sourceColumnSelect.invalid }"
+                                                    [required]="targetColumn.required">
+                                                    <option [ngValue]="null" [disabled]="targetColumn.required"
+                                                        *ngIf="!targetColumn.required || !input.mappings[targetColumn.name]">
+                                                        [Not mapped]</option>
+                                                    <option
+                                                        *ngFor="let sourceColumn of (input.fileDataTable ? input.fileDataTable.columns : [])">
+                                                        {{ sourceColumn.name }}
+                                                    </option>
+                                                </select>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </ng-template>
+                    </li>
+                </ul>
+        
+                <div [ngbNavOutlet]="inputDataTablesNav" class="ml-4"></div>
+            </div>
+        
+            <hr />
+        
+            <div class="btn-toolbar mt-3">
+                <div class="btn-group">
+                    <button class="btn btn-primary" (click)="performProcessing()"
+                        [disabled]="!mappingForm.valid">Process</button>
+                </div>
+            </div>
+        </form>
+        <div *ngIf="outputDataTables">
+            <h2>Output DataTables</h2>
+        
+            <div class="btn-toolbar">
+                <button class="btn btn-secondary" (click)="exportExcel()">Export to
+                    Excel...</button>
+            </div>
+        
+            <div class="d-flex mt-3">
+                <ul ngbNav #outputDataTablesNav="ngbNav" class="nav-pills" orientation="vertical">
+                    <li [ngbNavItem]="outputDataTable.name" *ngFor="let outputDataTable of outputDataTables">
+                        <a ngbNavLink>{{ outputDataTable.name }}</a>
+        
+                        <ng-template ngbNavContent>
+                            <h3>{{ outputDataTable.name }}</h3>
+                            <p *ngIf="outputDataTable.schema?.description"></p>
+        
+                            <table class="table table-hover table-striped">
+                                <thead>
+                                    <th *ngFor="let column of outputDataTable.columns">{{ column.name }}</th>
+                                </thead>
+                                <tbody>
+                                    <tr *ngFor="let row of outputDataTable.rows">
+                                        <td *ngFor="let column of outputDataTable.columns">{{ row[column.name] | json }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </ng-template>
+                    </li>
+                </ul>
+        
+                <div [ngbNavOutlet]="outputDataTablesNav" class="ml-4"></div>
+            </div>
+        </div>
     </div>
 </div>
